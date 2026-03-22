@@ -217,6 +217,33 @@
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            background: white;
+            border-radius: 50px;
+            padding: 0.2rem 1rem;
+            border: 1px solid rgba(0,176,255,0.3);
+            gap: 8px;
+        }
+
+        .search-input-wrapper i {
+            color: #00b0ff;
+            font-size: 0.9rem;
+        }
+
+        .search-input-wrapper input {
+            border: none;
+            padding: 0.6rem 0.2rem;
+            font-size: 0.9rem;
+            width: 180px;
+            outline: none;
+            background: transparent;
+            font-weight: 500;
         }
 
         .create-user-btn {
@@ -380,7 +407,7 @@
         .user-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 860px;
+            min-width: 1000px;
         }
 
         .user-table th {
@@ -436,7 +463,7 @@
             flex-wrap: wrap;
         }
 
-        .btn-block, .btn-unblock, .btn-delete {
+        .btn-block, .btn-unblock, .btn-delete, .btn-edit-credits {
             border: none;
             padding: 0.5rem 1.2rem;
             border-radius: 40px;
@@ -464,6 +491,16 @@
             color: #e65100;
         }
 
+        .btn-edit-credits {
+            background: #e0f2fe;
+            color: #0369a1;
+            margin-left: 8px;
+        }
+
+        .btn-edit-credits:hover {
+            background: #bae6fd;
+        }
+
         .numeric-badge {
             background: #deedff;
             padding: 0.25rem 0.9rem;
@@ -471,6 +508,16 @@
             font-weight: 600;
             font-size: 0.85rem;
             display: inline-block;
+        }
+
+        .login-count-badge {
+            background: #f1f0ff;
+            padding: 0.25rem 0.9rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+            color: #5b21b6;
         }
 
         .hidden {
@@ -586,6 +633,10 @@
                     <h3>user directory</h3>
                 </div>
                 <div class="action-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search by email or UID..." onkeyup="filterUsers()">
+                    </div>
                     <button class="create-user-btn" onclick="openCreateUserModal()">
                         <i class="fas fa-user-plus"></i> Create New User
                     </button>
@@ -607,17 +658,18 @@
                             <th>credits</th>
                             <th>daily used</th>
                             <th>daily limit</th>
+                            <th>login count</th>
                             <th>status</th>
                             <th>actions</th>
                         </tr>
                     </thead>
                     <tbody id="userTable">
-                        <tr><td colspan="7" style="text-align:center; padding:3rem;"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>
+                        <tr><td colspan="8" style="text-align:center; padding:3rem;"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="footer-note">
-                <i class="fas fa-database"></i> Session stays active · Auto token refresh every 30 mins · Create & manage users instantly
+                <i class="fas fa-database"></i> Session stays active · Edit credits anytime · Track user logins · Search users
             </div>
         </div>
     </div>
@@ -647,12 +699,38 @@
             </div>
             <div class="form-group">
                 <label><i class="fas fa-gauge-high"></i> Daily Limit</label>
-                <input type="number" id="newUserDailyLimit" value="50" step="5">
+                <input type="number" id="newUserDailyLimit" value="30" step="5">
             </div>
             <button type="submit" class="modal-submit" id="createUserBtn">
                 <i class="fas fa-check-circle"></i> Create Account
             </button>
         </form>
+    </div>
+</div>
+
+<!-- Edit Credits Modal -->
+<div id="editCreditsModal" class="modal-overlay hidden">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3><i class="fas fa-coins"></i> Edit Credits</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <div id="editModalError" class="error-message hidden"></div>
+        <div class="form-group">
+            <label>User Email</label>
+            <input type="text" id="editUserEmail" disabled style="background:#f3f4f6;">
+        </div>
+        <div class="form-group">
+            <label>Current Credits</label>
+            <input type="number" id="editCurrentCredits" disabled style="background:#f3f4f6;">
+        </div>
+        <div class="form-group">
+            <label>New Credits Amount</label>
+            <input type="number" id="editNewCredits" placeholder="Enter new credits value" step="1">
+        </div>
+        <button class="modal-submit" onclick="updateCredits()">
+            <i class="fas fa-save"></i> Update Credits
+        </button>
     </div>
 </div>
 
@@ -684,7 +762,7 @@
         .catch(err => console.error("Persistence error:", err));
     
     let refreshInterval = null;
-    let heartbeatInterval = null;
+    let allUsersData = []; // Store all users for search
     
     // Auth state observer
     auth.onAuthStateChanged(async (user) => {
@@ -697,7 +775,6 @@
             await loadUsers();
             
             if (refreshInterval) clearInterval(refreshInterval);
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
             
             refreshInterval = setInterval(async () => {
                 if (auth.currentUser) {
@@ -712,15 +789,10 @@
                 }
             }, 30 * 60 * 1000);
             
-            heartbeatInterval = setInterval(() => {
-                if (auth.currentUser) auth.currentUser.getIdToken(false).catch(()=>{});
-            }, 10 * 60 * 1000);
-            
         } else {
             document.getElementById("loginBox").classList.remove("hidden");
             document.getElementById("dashboard").classList.add("hidden");
             if (refreshInterval) clearInterval(refreshInterval);
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
             const sessionStatus = document.getElementById("sessionStatus");
             sessionStatus.innerHTML = `<i class="fas fa-circle"></i> not logged in`;
             sessionStatus.style.background = "#fef3c7";
@@ -766,57 +838,148 @@
         }
     };
     
-    // Load users with email field
+    // Search filter function
+    window.filterUsers = function() {
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+        if (!searchTerm) {
+            renderUserTable(allUsersData);
+            return;
+        }
+        const filtered = allUsersData.filter(user => 
+            user.email.toLowerCase().includes(searchTerm) || 
+            user.id.toLowerCase().includes(searchTerm)
+        );
+        renderUserTable(filtered);
+    };
+    
+    // Load users with email field and login count
     window.loadUsers = async function() {
         const tbody = document.getElementById("userTable");
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> fetching users...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> fetching users...</td></tr>`;
         try {
             if (!auth.currentUser) throw new Error("Session expired");
             const snapshot = await db.collection("users").get();
             if (snapshot.empty) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;">No users found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">No users found</td></tr>`;
+                allUsersData = [];
                 return;
             }
-            let html = "";
+            let usersArray = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const isBlocked = data.blocked === true;
-                const statusClass = isBlocked ? "blocked" : "active";
-                const statusText = isBlocked ? "BLOCKED" : "ACTIVE";
-                const statusIcon = isBlocked ? "fa-ban" : "fa-check-circle";
-                const userEmail = data.email || "—";
-                html += `
-                    <tr>
-                        <td><span class="uid-cell"><i class="fas fa-fingerprint"></i> ${doc.id.substring(0,12)}..</span></td>
-                        <td><i class="fas fa-envelope"></i> ${escapeHtml(userEmail)}</td>
-                        <td><span class="numeric-badge"><i class="fas fa-coins"></i> ${data.credits ?? 0}</span></td>
-                        <td><span class="numeric-badge"><i class="fas fa-chart-line"></i> ${data.dailyUsed ?? 0}</span></td>
-                        <td><span class="numeric-badge"><i class="fas fa-gauge-high"></i> ${data.dailyLimit ?? 0}</span></td>
-                        <td><span class="badge-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</span></td>
-                        <td>
-                            <div class="action-group">
-                                <button class="btn-block" onclick="blockUser('${doc.id}')"><i class="fas fa-lock"></i> Block</button>
-                                <button class="btn-unblock" onclick="unblockUser('${doc.id}')"><i class="fas fa-lock-open"></i> Unblock</button>
-                                <button class="btn-delete" onclick="deleteUser('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                usersArray.push({
+                    id: doc.id,
+                    email: data.email || "—",
+                    credits: data.credits ?? 0,
+                    dailyUsed: data.dailyUsed ?? 0,
+                    dailyLimit: data.dailyLimit ?? 30,
+                    blocked: data.blocked === true,
+                    loginCount: data.loginCount ?? 0
+                });
             });
-            tbody.innerHTML = html;
+            allUsersData = usersArray;
+            renderUserTable(usersArray);
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
         }
     };
     
+    function renderUserTable(users) {
+        const tbody = document.getElementById("userTable");
+        if (!users.length) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">No matching users</td></tr>`;
+            return;
+        }
+        let html = "";
+        users.forEach(user => {
+            const isBlocked = user.blocked;
+            const statusClass = isBlocked ? "blocked" : "active";
+            const statusText = isBlocked ? "BLOCKED" : "ACTIVE";
+            const statusIcon = isBlocked ? "fa-ban" : "fa-check-circle";
+            const userEmail = user.email;
+            html += `
+                <tr>
+                    <td><span class="uid-cell"><i class="fas fa-fingerprint"></i> ${user.id.substring(0,12)}..</span></td>
+                    <td><i class="fas fa-envelope"></i> ${escapeHtml(userEmail)}</td>
+                    <td>
+                        <span class="numeric-badge"><i class="fas fa-coins"></i> ${user.credits}</span>
+                        <button class="btn-edit-credits" onclick="openEditCreditsModal('${user.id}', '${escapeHtml(userEmail)}', ${user.credits})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                    <td><span class="numeric-badge"><i class="fas fa-chart-line"></i> ${user.dailyUsed}</span></td>
+                    <td><span class="numeric-badge"><i class="fas fa-gauge-high"></i> ${user.dailyLimit}</span></td>
+                    <td><span class="login-count-badge"><i class="fas fa-sign-in-alt"></i> ${user.loginCount}</span></td>
+                    <td><span class="badge-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</span></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn-block" onclick="blockUser('${user.id}')"><i class="fas fa-lock"></i> Block</button>
+                            <button class="btn-unblock" onclick="unblockUser('${user.id}')"><i class="fas fa-lock-open"></i> Unblock</button>
+                            <button class="btn-delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+    
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
     
-    // CREATE USER: Firebase Auth + Firestore document
+    // Edit Credits Functions
+    let currentEditUserId = null;
+    
+    window.openEditCreditsModal = function(uid, email, currentCredits) {
+        currentEditUserId = uid;
+        document.getElementById("editUserEmail").value = email;
+        document.getElementById("editCurrentCredits").value = currentCredits;
+        document.getElementById("editNewCredits").value = currentCredits;
+        document.getElementById("editModalError").classList.add("hidden");
+        document.getElementById("editCreditsModal").classList.remove("hidden");
+    };
+    
+    window.closeEditModal = function() {
+        document.getElementById("editCreditsModal").classList.add("hidden");
+        currentEditUserId = null;
+    };
+    
+    window.updateCredits = async function() {
+        const newCredits = parseInt(document.getElementById("editNewCredits").value);
+        if (isNaN(newCredits) || newCredits < 0) {
+            document.getElementById("editModalError").textContent = "Please enter a valid non-negative credit amount.";
+            document.getElementById("editModalError").classList.remove("hidden");
+            return;
+        }
+        try {
+            await db.collection("users").doc(currentEditUserId).update({ credits: newCredits });
+            closeEditModal();
+            await loadUsers();
+            showToast("Credits updated successfully!", "success");
+        } catch (err) {
+            document.getElementById("editModalError").textContent = "Error: " + err.message;
+            document.getElementById("editModalError").classList.remove("hidden");
+        }
+    };
+    
+    function showToast(msg, type) {
+        const toast = document.createElement("div");
+        toast.className = type === "success" ? "success-toast" : "error-message";
+        toast.textContent = msg;
+        toast.style.position = "fixed";
+        toast.style.bottom = "20px";
+        toast.style.right = "20px";
+        toast.style.zIndex = "1001";
+        toast.style.maxWidth = "300px";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // CREATE USER: Firebase Auth + Firestore document with loginCount
     window.createUserAccount = async function() {
         const email = document.getElementById("newUserEmail").value.trim();
         const password = document.getElementById("newUserPassword").value;
         const credits = parseInt(document.getElementById("newUserCredits").value) || 0;
-        const dailyLimit = parseInt(document.getElementById("newUserDailyLimit").value) || 50;
+        const dailyLimit = parseInt(document.getElementById("newUserDailyLimit").value) || 30;
         const modalError = document.getElementById("modalErrorMsg");
         const modalSuccess = document.getElementById("modalSuccessMsg");
         const createBtn = document.getElementById("createUserBtn");
@@ -839,17 +1002,16 @@
         createBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Creating...';
         
         try {
-            // 1. Create user in Firebase Auth
             const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
             const uid = userCredential.user.uid;
             
-            // 2. Store user data in Firestore
             await db.collection("users").doc(uid).set({
                 email: email,
                 credits: credits,
                 dailyUsed: 0,
                 dailyLimit: dailyLimit,
                 blocked: false,
+                loginCount: 0,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 uid: uid
             });
@@ -857,16 +1019,13 @@
             modalSuccess.textContent = `✅ User ${email} created successfully!`;
             modalSuccess.classList.remove("hidden");
             
-            // reset form
             document.getElementById("newUserEmail").value = "";
             document.getElementById("newUserPassword").value = "";
             document.getElementById("newUserCredits").value = "100";
-            document.getElementById("newUserDailyLimit").value = "50";
+            document.getElementById("newUserDailyLimit").value = "30";
             
-            // Refresh user table
             await loadUsers();
             
-            // Auto close after 2 seconds
             setTimeout(() => {
                 closeCreateUserModal();
             }, 2000);
@@ -892,7 +1051,7 @@
         document.getElementById("modalSuccessMsg").classList.add("hidden");
         document.getElementById("createUserForm").reset();
         document.getElementById("newUserCredits").value = "100";
-        document.getElementById("newUserDailyLimit").value = "50";
+        document.getElementById("newUserDailyLimit").value = "30";
     };
     
     window.closeCreateUserModal = function() {
@@ -900,7 +1059,7 @@
     };
     
     window.blockUser = async function(uid) {
-        if (!confirm(`Block user?`)) return;
+        if (!confirm(`Block this user?`)) return;
         try {
             await db.collection("users").doc(uid).update({ blocked: true });
             await loadUsers();
@@ -908,7 +1067,7 @@
     };
     
     window.unblockUser = async function(uid) {
-        if (!confirm(`Unblock user?`)) return;
+        if (!confirm(`Unblock this user?`)) return;
         try {
             await db.collection("users").doc(uid).update({ blocked: false });
             await loadUsers();
@@ -931,9 +1090,12 @@
     
     document.getElementById("password")?.addEventListener("keypress", function(e) { if(e.key === "Enter") login(); });
     
-    // close modal on outside click
+    // close modals on outside click
     document.getElementById("createUserModal")?.addEventListener("click", function(e) {
         if(e.target === this) closeCreateUserModal();
+    });
+    document.getElementById("editCreditsModal")?.addEventListener("click", function(e) {
+        if(e.target === this) closeEditModal();
     });
 </script>
 </body>
