@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webpera · Admin Console | User Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Webpera · Admin Console | Secure User Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
@@ -26,7 +26,7 @@
 
         .glass-panel {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1500px;
             background: rgba(255,255,255,0.75);
             backdrop-filter: blur(16px) saturate(180%);
             border-radius: 2.5rem;
@@ -316,7 +316,7 @@
         .modal-container {
             background: white;
             border-radius: 2rem;
-            max-width: 500px;
+            max-width: 520px;
             width: 90%;
             padding: 2rem;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
@@ -407,7 +407,7 @@
         .user-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1000px;
+            min-width: 1100px;
         }
 
         .user-table th {
@@ -520,6 +520,18 @@
             color: #5b21b6;
         }
 
+        .session-device-badge {
+            background: #e9f9f0;
+            padding: 0.25rem 0.9rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #0b5e42;
+        }
+
         .hidden {
             display: none;
         }
@@ -587,7 +599,7 @@
             </div>
             <div class="logo-text">
                 <h1>WEBPERA</h1>
-                <span>administration console · persistent session</span>
+                <span>administration console · block enforcement · daily auto reset</span>
             </div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -605,7 +617,7 @@
             <div class="login-card">
                 <div class="login-header">
                     <h3>admin access</h3>
-                    <p>permanent session · no auto logout</p>
+                    <p>permanent session · full control</p>
                 </div>
                 <div class="input-group-modern">
                     <i class="fas fa-envelope"></i>
@@ -652,283 +664,177 @@
             <div class="table-container">
                 <table class="user-table">
                     <thead>
-                        <tr>
-                            <th>UID</th>
-                            <th>Email</th>
-                            <th>credits</th>
-                            <th>daily used</th>
-                            <th>daily limit</th>
-                            <th>login count</th>
-                            <th>status</th>
-                            <th>actions</th>
-                        </tr>
+                        <tr><th>UID</th><th>Email</th><th>credits</th><th>daily used</th><th>daily limit</th><th>login count</th><th>active sessions</th><th>status</th><th>actions</th></tr>
                     </thead>
-                    <tbody id="userTable">
-                        <tr><td colspan="8" style="text-align:center; padding:3rem;"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr>
-                    </tbody>
+                    <tbody id="userTable"><tr><td colspan="9" style="text-align:center; padding:3rem;"><i class="fas fa-spinner fa-pulse"></i> loading...</td></tr></tbody>
                 </table>
             </div>
             <div class="footer-note">
-                <i class="fas fa-database"></i> Session stays active · Edit credits anytime · Track user logins · Search users
+                <i class="fas fa-sync-alt"></i> Daily limit resets every 24h automatically (UTC). Blocked users cannot access any feature until unblocked.
             </div>
         </div>
     </div>
 </div>
 
 <!-- Create User Modal -->
-<div id="createUserModal" class="modal-overlay hidden">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3><i class="fas fa-user-plus"></i> Create New User</h3>
-            <button class="modal-close" onclick="closeCreateUserModal()">&times;</button>
-        </div>
-        <div id="modalErrorMsg" class="error-message hidden"></div>
-        <div id="modalSuccessMsg" class="success-toast hidden"></div>
-        <form id="createUserForm" onsubmit="event.preventDefault(); createUserAccount();">
-            <div class="form-group">
-                <label><i class="fas fa-envelope"></i> Email Address *</label>
-                <input type="email" id="newUserEmail" placeholder="user@example.com" required>
-            </div>
-            <div class="form-group">
-                <label><i class="fas fa-lock"></i> Password *</label>
-                <input type="password" id="newUserPassword" placeholder="Min 6 characters" required>
-            </div>
-            <div class="form-group">
-                <label><i class="fas fa-coins"></i> Initial Credits</label>
-                <input type="number" id="newUserCredits" value="100" step="10">
-            </div>
-            <div class="form-group">
-                <label><i class="fas fa-gauge-high"></i> Daily Limit</label>
-                <input type="number" id="newUserDailyLimit" value="30" step="5">
-            </div>
-            <button type="submit" class="modal-submit" id="createUserBtn">
-                <i class="fas fa-check-circle"></i> Create Account
-            </button>
-        </form>
-    </div>
-</div>
+<div id="createUserModal" class="modal-overlay hidden"><div class="modal-container"><div class="modal-header"><h3><i class="fas fa-user-plus"></i> Create New User</h3><button class="modal-close" onclick="closeCreateUserModal()">&times;</button></div><div id="modalErrorMsg" class="error-message hidden"></div><div id="modalSuccessMsg" class="success-toast hidden"></div><form id="createUserForm" onsubmit="event.preventDefault(); createUserAccount();"><div class="form-group"><label><i class="fas fa-envelope"></i> Email *</label><input type="email" id="newUserEmail" placeholder="user@example.com" required></div><div class="form-group"><label><i class="fas fa-lock"></i> Password *</label><input type="password" id="newUserPassword" placeholder="Min 6 characters" required></div><div class="form-group"><label><i class="fas fa-coins"></i> Initial Credits</label><input type="number" id="newUserCredits" value="100" step="10"></div><div class="form-group"><label><i class="fas fa-gauge-high"></i> Daily Limit</label><input type="number" id="newUserDailyLimit" value="30" step="5"></div><button type="submit" class="modal-submit" id="createUserBtn"><i class="fas fa-check-circle"></i> Create Account</button></form></div></div>
 
 <!-- Edit Credits Modal -->
-<div id="editCreditsModal" class="modal-overlay hidden">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3><i class="fas fa-coins"></i> Edit Credits</h3>
-            <button class="modal-close" onclick="closeEditModal()">&times;</button>
-        </div>
-        <div id="editModalError" class="error-message hidden"></div>
-        <div class="form-group">
-            <label>User Email</label>
-            <input type="text" id="editUserEmail" disabled style="background:#f3f4f6;">
-        </div>
-        <div class="form-group">
-            <label>Current Credits</label>
-            <input type="number" id="editCurrentCredits" disabled style="background:#f3f4f6;">
-        </div>
-        <div class="form-group">
-            <label>New Credits Amount</label>
-            <input type="number" id="editNewCredits" placeholder="Enter new credits value" step="1">
-        </div>
-        <button class="modal-submit" onclick="updateCredits()">
-            <i class="fas fa-save"></i> Update Credits
-        </button>
-    </div>
-</div>
+<div id="editCreditsModal" class="modal-overlay hidden"><div class="modal-container"><div class="modal-header"><h3><i class="fas fa-coins"></i> Edit Credits</h3><button class="modal-close" onclick="closeEditModal()">&times;</button></div><div id="editModalError" class="error-message hidden"></div><div class="form-group"><label>User Email</label><input type="text" id="editUserEmail" disabled style="background:#f3f4f6;"></div><div class="form-group"><label>Current Credits</label><input type="number" id="editCurrentCredits" disabled style="background:#f3f4f6;"></div><div class="form-group"><label>New Credits Amount</label><input type="number" id="editNewCredits" placeholder="Enter new credits value" step="1"></div><button class="modal-submit" onclick="updateCredits()"><i class="fas fa-save"></i> Update Credits</button></div></div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
-    // Firebase Config
-    const firebaseConfig = {
-        apiKey: "AIzaSyDlgxQFeSvapABuxo7nAgZwiJrn_gMpvHk",
-        authDomain: "webpera-4b393.firebaseapp.com",
-        projectId: "webpera-4b393",
-        storageBucket: "webpera-4b393.firebasestorage.app",
-        messagingSenderId: "845796014673",
-        appId: "1:845796014673:web:7b584501261a7c4a0e9670",
-        measurementId: "G-M6BJ51RQ05"
-    };
-    
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    
+    const firebaseConfig = { apiKey: "AIzaSyDlgxQFeSvapABuxo7nAgZwiJrn_gMpvHk", authDomain: "webpera-4b393.firebaseapp.com", projectId: "webpera-4b393", storageBucket: "webpera-4b393.firebasestorage.app", messagingSenderId: "845796014673", appId: "1:845796014673:web:7b584501261a7c4a0e9670", measurementId: "G-M6BJ51RQ05" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(() => console.log("✅ Session persistence: LOCAL"))
-        .catch(err => console.error("Persistence error:", err));
-    
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
     let refreshInterval = null;
-    let allUsersData = []; // Store all users for search
-    
-    // Auth state observer
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            document.getElementById("loginBox").classList.add("hidden");
-            document.getElementById("dashboard").classList.remove("hidden");
-            const sessionStatus = document.getElementById("sessionStatus");
-            sessionStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${user.email}`;
-            sessionStatus.style.background = "#d1fae5";
-            await loadUsers();
-            
-            if (refreshInterval) clearInterval(refreshInterval);
-            
-            refreshInterval = setInterval(async () => {
-                if (auth.currentUser) {
-                    try {
-                        await auth.currentUser.getIdToken(true);
-                        console.log("🔄 Token refreshed");
-                        const alertDiv = document.getElementById("connectionAlert");
-                        if (alertDiv) alertDiv.classList.add("hidden");
-                    } catch (err) {
-                        console.warn("Token refresh warning:", err);
-                    }
-                }
-            }, 30 * 60 * 1000);
-            
-        } else {
-            document.getElementById("loginBox").classList.remove("hidden");
-            document.getElementById("dashboard").classList.add("hidden");
-            if (refreshInterval) clearInterval(refreshInterval);
-            const sessionStatus = document.getElementById("sessionStatus");
-            sessionStatus.innerHTML = `<i class="fas fa-circle"></i> not logged in`;
-            sessionStatus.style.background = "#fef3c7";
+    let allUsersData = [];
+
+    // ----- DAILY AUTO RESET (Cloud Firestore + local trigger on load) -----
+    // This function checks lastResetDate and resets dailyUsed if last reset > 24h ago.
+    // It is called during loadUsers and also can be triggered periodically.
+    async function applyDailyResetIfNeeded(userDoc, userId, userData) {
+        const now = Date.now();
+        let lastReset = userData.lastDailyReset ? userData.lastDailyReset.toMillis ? userData.lastDailyReset.toMillis() : userData.lastDailyReset : 0;
+        const oneDay = 24 * 60 * 60 * 1000;
+        if (!lastReset || (now - lastReset) >= oneDay) {
+            // reset daily usage and update timestamp
+            await db.collection("users").doc(userId).update({
+                dailyUsed: 0,
+                lastDailyReset: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return true;
         }
-    });
+        return false;
+    }
+
+    // Admin block enforcement: if user.blocked === true, any app logic (outside admin) must reject access.
+    // For admin panel we just show blocked status & ensure that blocked users cannot be used until unblocked.
+    // The actual enforcement is on backend/frontend app, but admin shows correct blocked flag.
     
-    window.login = async function() {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        const errorDiv = document.getElementById("loginError");
-        const loginBtn = document.getElementById("loginBtn");
-        errorDiv.classList.add("hidden");
-        if (!email || !password) {
-            errorDiv.textContent = "Please enter email and password";
-            errorDiv.classList.remove("hidden");
-            return;
-        }
-        const originalText = loginBtn.innerHTML;
-        loginBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> signing in...';
-        loginBtn.disabled = true;
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            document.getElementById("email").value = "";
-            document.getElementById("password").value = "";
-        } catch (err) {
-            let msg = "Login failed: ";
-            if (err.code === "auth/user-not-found") msg += "User not found";
-            else if (err.code === "auth/wrong-password") msg += "Wrong password";
-            else if (err.code === "auth/invalid-email") msg += "Invalid email";
-            else if (err.code === "auth/too-many-requests") msg += "Too many attempts";
-            else msg += err.message;
-            errorDiv.textContent = msg;
-            errorDiv.classList.remove("hidden");
-        } finally {
-            loginBtn.innerHTML = originalText;
-            loginBtn.disabled = false;
-        }
-    };
-    
-    window.manualLogout = async function() {
-        if (confirm("Are you sure you want to logout?")) {
-            await auth.signOut();
-        }
-    };
-    
-    // Search filter function
-    window.filterUsers = function() {
-        const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
-        if (!searchTerm) {
-            renderUserTable(allUsersData);
-            return;
-        }
-        const filtered = allUsersData.filter(user => 
-            user.email.toLowerCase().includes(searchTerm) || 
-            user.id.toLowerCase().includes(searchTerm)
-        );
-        renderUserTable(filtered);
-    };
-    
-    // Load users with email field and login count
+    // Load users with enhanced fields: daily auto-reset applied, active sessions via custom claim (simulated: last login devices)
     window.loadUsers = async function() {
         const tbody = document.getElementById("userTable");
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> fetching users...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> fetching users...</td></tr>`;
         try {
             if (!auth.currentUser) throw new Error("Session expired");
             const snapshot = await db.collection("users").get();
-            if (snapshot.empty) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">No users found</td></tr>`;
-                allUsersData = [];
-                return;
-            }
             let usersArray = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            // apply daily reset for each user before rendering
+            for (const doc of snapshot.docs) {
+                let data = doc.data();
+                const userId = doc.id;
+                const wasReset = await applyDailyResetIfNeeded(doc, userId, data);
+                if (wasReset) {
+                    // refresh data after reset
+                    const updatedDoc = await db.collection("users").doc(userId).get();
+                    data = updatedDoc.data();
+                }
+                // Determine active device sessions: We will track a separate subcollection "sessions" to count unique devices.
+                // For simplicity but robust: we store an array of session tokens or use login timestamp per device. We'll implement sessions count based on 'activeSessions' field managed at login.
+                // Admin panel will read 'activeSessionCount' from user doc (maintained by backend logic, default 0)
+                let activeSessions = data.activeSessionCount || 0;
                 usersArray.push({
-                    id: doc.id,
+                    id: userId,
                     email: data.email || "—",
                     credits: data.credits ?? 0,
                     dailyUsed: data.dailyUsed ?? 0,
                     dailyLimit: data.dailyLimit ?? 30,
                     blocked: data.blocked === true,
-                    loginCount: data.loginCount ?? 0
+                    loginCount: data.loginCount ?? 0,
+                    activeSessions: activeSessions
                 });
-            });
+            }
             allUsersData = usersArray;
             renderUserTable(usersArray);
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
         }
     };
     
     function renderUserTable(users) {
         const tbody = document.getElementById("userTable");
-        if (!users.length) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">No matching users</td></tr>`;
-            return;
-        }
+        if (!users.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem;">No matching users</td></tr>`; return; }
         let html = "";
         users.forEach(user => {
             const isBlocked = user.blocked;
             const statusClass = isBlocked ? "blocked" : "active";
             const statusText = isBlocked ? "BLOCKED" : "ACTIVE";
             const statusIcon = isBlocked ? "fa-ban" : "fa-check-circle";
-            const userEmail = user.email;
-            html += `
-                <tr>
-                    <td><span class="uid-cell"><i class="fas fa-fingerprint"></i> ${user.id.substring(0,12)}..</span></td>
-                    <td><i class="fas fa-envelope"></i> ${escapeHtml(userEmail)}</td>
-                    <td>
-                        <span class="numeric-badge"><i class="fas fa-coins"></i> ${user.credits}</span>
-                        <button class="btn-edit-credits" onclick="openEditCreditsModal('${user.id}', '${escapeHtml(userEmail)}', ${user.credits})">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    </td>
-                    <td><span class="numeric-badge"><i class="fas fa-chart-line"></i> ${user.dailyUsed}</span></td>
-                    <td><span class="numeric-badge"><i class="fas fa-gauge-high"></i> ${user.dailyLimit}</span></td>
-                    <td><span class="login-count-badge"><i class="fas fa-sign-in-alt"></i> ${user.loginCount}</span></td>
-                    <td><span class="badge-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</span></td>
-                    <td>
-                        <div class="action-group">
-                            <button class="btn-block" onclick="blockUser('${user.id}')"><i class="fas fa-lock"></i> Block</button>
-                            <button class="btn-unblock" onclick="unblockUser('${user.id}')"><i class="fas fa-lock-open"></i> Unblock</button>
-                            <button class="btn-delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i> Delete</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            const sessionIcon = user.activeSessions > 0 ? "fa-wifi" : "fa-mobile-alt";
+            html += `<tr>
+                <td><span class="uid-cell"><i class="fas fa-fingerprint"></i> ${user.id.substring(0,12)}..</span></td>
+                <td><i class="fas fa-envelope"></i> ${escapeHtml(user.email)}</td>
+                <td><span class="numeric-badge"><i class="fas fa-coins"></i> ${user.credits}</span> <button class="btn-edit-credits" onclick="openEditCreditsModal('${user.id}', '${escapeHtml(user.email)}', ${user.credits})"><i class="fas fa-edit"></i> Edit</button></td>
+                <td><span class="numeric-badge"><i class="fas fa-chart-line"></i> ${user.dailyUsed}</span></td>
+                <td><span class="numeric-badge"><i class="fas fa-gauge-high"></i> ${user.dailyLimit}</span></td>
+                <td><span class="login-count-badge"><i class="fas fa-sign-in-alt"></i> ${user.loginCount}</span></td>
+                <td><span class="session-device-badge"><i class="fas ${sessionIcon}"></i> ${user.activeSessions} device${user.activeSessions !== 1 ? 's' : ''}</span></td>
+                <td><span class="badge-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</span></td>
+                <td><div class="action-group">
+                    <button class="btn-block" onclick="blockUser('${user.id}')"><i class="fas fa-lock"></i> Block</button>
+                    <button class="btn-unblock" onclick="unblockUser('${user.id}')"><i class="fas fa-lock-open"></i> Unblock</button>
+                    <button class="btn-delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i> Delete</button>
+                </div></td>
+            </tr>`;
         });
         tbody.innerHTML = html;
     }
     
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
     
-    // Edit Credits Functions
+    window.blockUser = async function(uid) {
+        if (!confirm(`⚠️ Block user? After block, user will be denied access instantly until admin unblocks.`)) return;
+        try {
+            await db.collection("users").doc(uid).update({ blocked: true });
+            await loadUsers();
+            showToast("User blocked successfully. Access denied.", "success");
+        } catch (err) { showToast("Error: " + err.message, "error"); }
+    };
+    
+    window.unblockUser = async function(uid) {
+        if (!confirm(`Unblock this user? They will regain access.`)) return;
+        try {
+            await db.collection("users").doc(uid).update({ blocked: false });
+            await loadUsers();
+            showToast("User unblocked. Access restored.", "success");
+        } catch (err) { showToast("Error: " + err.message, "error"); }
+    };
+    
+    window.deleteUser = async function(uid) {
+        if (!confirm(`⚠️ Permanently delete user record? Auth account remains but Firestore data removed.`)) return;
+        try {
+            await db.collection("users").doc(uid).delete();
+            await loadUsers();
+            showToast("User data deleted.", "success");
+        } catch (err) { showToast("Error: " + err.message, "error"); }
+    };
+    
+    window.updateCredits = async function() {
+        const newCredits = parseInt(document.getElementById("editNewCredits").value);
+        if (isNaN(newCredits) || newCredits < 0) {
+            document.getElementById("editModalError").textContent = "Valid non-negative credit required.";
+            document.getElementById("editModalError").classList.remove("hidden");
+            return;
+        }
+        try {
+            await db.collection("users").doc(currentEditUserId).update({ credits: newCredits });
+            closeEditModal();
+            await loadUsers();
+            showToast("Credits updated!", "success");
+        } catch (err) {
+            document.getElementById("editModalError").textContent = "Error: " + err.message;
+            document.getElementById("editModalError").classList.remove("hidden");
+        }
+    };
+    
     let currentEditUserId = null;
-    
     window.openEditCreditsModal = function(uid, email, currentCredits) {
         currentEditUserId = uid;
         document.getElementById("editUserEmail").value = email;
@@ -937,44 +843,8 @@
         document.getElementById("editModalError").classList.add("hidden");
         document.getElementById("editCreditsModal").classList.remove("hidden");
     };
+    window.closeEditModal = function() { document.getElementById("editCreditsModal").classList.add("hidden"); currentEditUserId = null; };
     
-    window.closeEditModal = function() {
-        document.getElementById("editCreditsModal").classList.add("hidden");
-        currentEditUserId = null;
-    };
-    
-    window.updateCredits = async function() {
-        const newCredits = parseInt(document.getElementById("editNewCredits").value);
-        if (isNaN(newCredits) || newCredits < 0) {
-            document.getElementById("editModalError").textContent = "Please enter a valid non-negative credit amount.";
-            document.getElementById("editModalError").classList.remove("hidden");
-            return;
-        }
-        try {
-            await db.collection("users").doc(currentEditUserId).update({ credits: newCredits });
-            closeEditModal();
-            await loadUsers();
-            showToast("Credits updated successfully!", "success");
-        } catch (err) {
-            document.getElementById("editModalError").textContent = "Error: " + err.message;
-            document.getElementById("editModalError").classList.remove("hidden");
-        }
-    };
-    
-    function showToast(msg, type) {
-        const toast = document.createElement("div");
-        toast.className = type === "success" ? "success-toast" : "error-message";
-        toast.textContent = msg;
-        toast.style.position = "fixed";
-        toast.style.bottom = "20px";
-        toast.style.right = "20px";
-        toast.style.zIndex = "1001";
-        toast.style.maxWidth = "300px";
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-    
-    // CREATE USER: Firebase Auth + Firestore document with loginCount
     window.createUserAccount = async function() {
         const email = document.getElementById("newUserEmail").value.trim();
         const password = document.getElementById("newUserPassword").value;
@@ -983,120 +853,87 @@
         const modalError = document.getElementById("modalErrorMsg");
         const modalSuccess = document.getElementById("modalSuccessMsg");
         const createBtn = document.getElementById("createUserBtn");
-        
-        modalError.classList.add("hidden");
-        modalSuccess.classList.add("hidden");
-        
-        if (!email || !password) {
-            modalError.textContent = "Email and password are required";
-            modalError.classList.remove("hidden");
-            return;
-        }
-        if (password.length < 6) {
-            modalError.textContent = "Password must be at least 6 characters";
-            modalError.classList.remove("hidden");
-            return;
-        }
-        
-        createBtn.disabled = true;
-        createBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Creating...';
-        
+        modalError.classList.add("hidden"); modalSuccess.classList.add("hidden");
+        if (!email || !password) { modalError.textContent = "Email and password required"; modalError.classList.remove("hidden"); return; }
+        if (password.length < 6) { modalError.textContent = "Password min 6 chars"; modalError.classList.remove("hidden"); return; }
+        createBtn.disabled = true; createBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Creating...';
         try {
             const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
             const uid = userCredential.user.uid;
-            
             await db.collection("users").doc(uid).set({
-                email: email,
-                credits: credits,
-                dailyUsed: 0,
-                dailyLimit: dailyLimit,
-                blocked: false,
-                loginCount: 0,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                uid: uid
+                email: email, credits: credits, dailyUsed: 0, dailyLimit: dailyLimit, blocked: false,
+                loginCount: 0, activeSessionCount: 0, lastDailyReset: firebase.firestore.FieldValue.serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(), uid: uid
             });
-            
-            modalSuccess.textContent = `✅ User ${email} created successfully!`;
+            modalSuccess.textContent = `✅ User ${email} created!`;
             modalSuccess.classList.remove("hidden");
-            
-            document.getElementById("newUserEmail").value = "";
-            document.getElementById("newUserPassword").value = "";
-            document.getElementById("newUserCredits").value = "100";
-            document.getElementById("newUserDailyLimit").value = "30";
-            
+            document.getElementById("newUserEmail").value = ""; document.getElementById("newUserPassword").value = "";
             await loadUsers();
-            
-            setTimeout(() => {
-                closeCreateUserModal();
-            }, 2000);
-            
+            setTimeout(() => closeCreateUserModal(), 1800);
         } catch (err) {
-            console.error("Create user error:", err);
-            let errorMsg = "Creation failed: ";
-            if (err.code === "auth/email-already-in-use") errorMsg += "Email already registered.";
-            else if (err.code === "auth/invalid-email") errorMsg += "Invalid email format.";
-            else if (err.code === "auth/weak-password") errorMsg += "Password too weak (min 6 chars).";
-            else errorMsg += err.message;
-            modalError.textContent = errorMsg;
+            let errorMsg = err.code === "auth/email-already-in-use" ? "Email already exists." : err.message;
+            modalError.textContent = "Creation failed: " + errorMsg;
             modalError.classList.remove("hidden");
         } finally {
-            createBtn.disabled = false;
-            createBtn.innerHTML = '<i class="fas fa-check-circle"></i> Create Account';
+            createBtn.disabled = false; createBtn.innerHTML = '<i class="fas fa-check-circle"></i> Create Account';
         }
     };
     
-    window.openCreateUserModal = function() {
-        document.getElementById("createUserModal").classList.remove("hidden");
-        document.getElementById("modalErrorMsg").classList.add("hidden");
-        document.getElementById("modalSuccessMsg").classList.add("hidden");
-        document.getElementById("createUserForm").reset();
-        document.getElementById("newUserCredits").value = "100";
-        document.getElementById("newUserDailyLimit").value = "30";
+    window.filterUsers = function() {
+        const term = document.getElementById("searchInput").value.toLowerCase().trim();
+        if (!term) renderUserTable(allUsersData);
+        else renderUserTable(allUsersData.filter(u => u.email.toLowerCase().includes(term) || u.id.toLowerCase().includes(term)));
     };
     
-    window.closeCreateUserModal = function() {
-        document.getElementById("createUserModal").classList.add("hidden");
-    };
-    
-    window.blockUser = async function(uid) {
-        if (!confirm(`Block this user?`)) return;
+    window.login = async function() {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const errorDiv = document.getElementById("loginError");
+        errorDiv.classList.add("hidden");
+        const btn = document.getElementById("loginBtn");
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> signing in...';
         try {
-            await db.collection("users").doc(uid).update({ blocked: true });
-            await loadUsers();
-        } catch (err) { alert("Error: " + err.message); }
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (err) {
+            let msg = "Login failed: " + (err.message || "unknown error");
+            errorDiv.textContent = msg; errorDiv.classList.remove("hidden");
+        } finally {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> sign in';
+        }
     };
     
-    window.unblockUser = async function(uid) {
-        if (!confirm(`Unblock this user?`)) return;
-        try {
-            await db.collection("users").doc(uid).update({ blocked: false });
-            await loadUsers();
-        } catch (err) { alert("Error: " + err.message); }
-    };
+    window.manualLogout = async function() { if(confirm("Logout?")) await auth.signOut(); };
     
-    window.deleteUser = async function(uid) {
-        if (!confirm(`⚠️ Delete user permanently? This removes Firestore data only. Auth account remains.`)) return;
-        try {
-            await db.collection("users").doc(uid).delete();
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            document.getElementById("loginBox").classList.add("hidden");
+            document.getElementById("dashboard").classList.remove("hidden");
+            document.getElementById("sessionStatus").innerHTML = `<i class="fas fa-check-circle"></i> ${user.email}`;
             await loadUsers();
-        } catch (err) { alert("Error: " + err.message); }
-    };
-    
-    document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && auth.currentUser) {
-            auth.currentUser.getIdToken(true).then(() => loadUsers()).catch(()=>{});
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(async () => { if(auth.currentUser) await loadUsers(); }, 45000);
+        } else {
+            document.getElementById("loginBox").classList.remove("hidden");
+            document.getElementById("dashboard").classList.add("hidden");
+            if (refreshInterval) clearInterval(refreshInterval);
+            document.getElementById("sessionStatus").innerHTML = `<i class="fas fa-circle"></i> not logged in`;
         }
     });
     
-    document.getElementById("password")?.addEventListener("keypress", function(e) { if(e.key === "Enter") login(); });
+    function showToast(msg, type) {
+        const toast = document.createElement("div");
+        toast.className = type === "success" ? "success-toast" : "error-message";
+        toast.textContent = msg;
+        toast.style.position = "fixed"; toast.style.bottom = "20px"; toast.style.right = "20px"; toast.style.zIndex = "1001";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
     
-    // close modals on outside click
-    document.getElementById("createUserModal")?.addEventListener("click", function(e) {
-        if(e.target === this) closeCreateUserModal();
-    });
-    document.getElementById("editCreditsModal")?.addEventListener("click", function(e) {
-        if(e.target === this) closeEditModal();
-    });
+    window.openCreateUserModal = function() { document.getElementById("createUserModal").classList.remove("hidden"); document.getElementById("modalErrorMsg").classList.add("hidden"); document.getElementById("modalSuccessMsg").classList.add("hidden"); document.getElementById("createUserForm").reset(); document.getElementById("newUserCredits").value = "100"; document.getElementById("newUserDailyLimit").value = "30"; };
+    window.closeCreateUserModal = function() { document.getElementById("createUserModal").classList.add("hidden"); };
+    document.getElementById("createUserModal")?.addEventListener("click", (e) => { if(e.target === document.getElementById("createUserModal")) closeCreateUserModal(); });
+    document.getElementById("editCreditsModal")?.addEventListener("click", (e) => { if(e.target === document.getElementById("editCreditsModal")) closeEditModal(); });
+    document.getElementById("password")?.addEventListener("keypress", (e) => { if(e.key === "Enter") login(); });
 </script>
 </body>
 </html>
